@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Disable source map loading -->
+    <meta name="source-map" content="none">
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" crossorigin="anonymous">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    
+    <!-- AdminLTE CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css" crossorigin="anonymous">
+  </head>
+
+  <body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+      <!-- Main Sidebar Container -->
+      <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <!-- Brand Logo -->
+        <a href="./index.html" class="brand-link" id="brand-home">
+          <i class="fas fa-check-circle text-primary ml-3"></i>
+          <span class="brand-text font-weight-light ml-2">Web CheckText</span>
+        </a>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+          <!-- Sidebar Menu -->
+          <nav class="mt-2">
+            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+              <!-- Item 1: 字幕檔錯誤檢查 -->
+              <li class="nav-item">
+                <a href="#" class="nav-link" data-function="text-error-check" data-title="字幕檔錯誤檢查" data-icon="fas fa-exclamation-triangle">
+                  <i class="nav-icon fas fa-exclamation-triangle"></i>
+                  <p>字幕檔錯誤檢查</p>
+                </a>
+              </li>
+              
+              <!-- Item 2: 字幕分段 -->
+              <li class="nav-item">
+                <a href="#" class="nav-link" data-function="text-segment" data-title="字幕分段" data-icon="fas fa-cut">
+                  <i class="nav-icon fas fa-cut"></i>
+                  <p>字幕分段</p>
+                </a>
+              </li>
+              
+              <!-- Item 3: 合併字幕檔 -->
+              <li class="nav-item">
+                <a href="#" class="nav-link" data-function="text-merge" data-title="合併字幕檔" data-icon="fas fa-object-group">
+                  <i class="nav-icon fas fa-object-group"></i>
+                  <p>合併字幕檔</p>
+                </a>
+              </li>
+              
+              <!-- Item 4: 時間計算 -->
+              <li class="nav-item">
+                <a href="#" class="nav-link" data-function="time-calc" data-title="時間計算" data-icon="fas fa-clock">
+                  <i class="nav-icon fas fa-clock"></i>
+                  <p>時間計算</p>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </aside>
+
+      <!-- Content Wrapper -->
+      <div class="content-wrapper d-flex flex-column">
+        <!-- Content Header -->
+        <section class="content-header">
+          <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h1 class="mb-0 flex-grow-1 text-truncate">Web CheckText</h1>
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="dark-mode-switch" >
+                <label class="custom-control-label" for="dark-mode-switch">Dark Mode</label>
+              </div>
+              <button type="button" class="btn btn-dark ms-2" data-widget="pushmenu" role="button">
+                <i class="fas fa-bars"></i>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Main content -->
+        <section class="content flex-fill d-flex">
+          <div class="container-fluid d-flex flex-fill">
+            <!-- Default Welcome Card -->
+            <div class="card card-primary flex-fill" id="welcome-card">
+              <div class="card-header">
+                <h3 class="card-title">歡迎使用 Web CheckText</h3>
+              </div>
+              <div class="card-body flex-fill">
+                <p>這是一個專用於字幕處理的網頁應用程式，具有可折疊的側邊欄導航。</p>
+                <p>側邊欄包含4個主要功能選項：</p>
+                <ul>
+                  <li><i class="fas fa-exclamation-triangle text-warning"></i> 字幕檔錯誤檢查 - 檢查字幕檔案中的錯誤</li>
+                  <li><i class="fas fa-cut text-success"></i> 字幕分段 - 將長字幕分割成小段</li>
+                  <li><i class="fas fa-object-group text-primary"></i> 合併字幕檔 - 合併多個字幕檔案</li>
+                  <li><i class="fas fa-clock text-info"></i> 時間計算 - 計算字幕時間軸</li>
+                </ul>
+                <hr>
+                <p class="text-muted">
+                  <i class="fas fa-info-circle"></i> 
+                  點擊側邊欄的功能選項來使用不同的字幕處理工具。
+                </p>
+              </div>
+            </div>
+
+            <!-- Iframe Container for Function Pages -->
+            <div class="flex-fill" id="iframe-container" style="display: none;">
+              <iframe id="function-iframe" src="" class="w-100 h-100 border-none"></iframe>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+    
+    <!-- Bootstrap JS Bundle (Bootstrap 5 includes Popper.js) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    
+    <!-- AdminLTE JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js" crossorigin="anonymous"></script>
+
+    <script>
+      $(document).ready(function() {
+        
+        $iframe = $('#function-iframe');
+        $iframe.on('load', function() {
+          if (this.contentWindow) {
+            const isDarkMode = $('body').hasClass('dark-mode');
+            this.contentWindow.postMessage({ type: 'dark-mode-change', isDarkMode }, '*');
+          }
+        });
+      
+        // Sidebar menu item click handlers for iframe loading
+        $('.nav-sidebar .nav-link').on('click', function(e) {
+          e.preventDefault();
+          
+          // Remove active class from all nav links
+          $('.nav-sidebar .nav-link').removeClass('active');
+          // Add active class to clicked link
+          $(this).addClass('active');
+          
+          // Get function details
+          const functionType = $(this).data('function');
+          
+          // Hide welcome card and show iframe container
+          $('#welcome-card').removeClass('d-flex');
+          $('#welcome-card').hide();
+          $('#iframe-container').show();
+          $('#iframe-container').addClass('d-flex');
+                 
+          // Load appropriate content in iframe
+          $iframe.attr('src', `${functionType}.html`);
+        });
+
+        // switch dark mode
+        $("#dark-mode-switch").on('change', function() {
+          let isDarkMode = false;
+          if ($(this).is(':checked')) {
+            isDarkMode = true;
+            $('body').addClass('dark-mode');
+          }
+          else {
+            $('body').removeClass('dark-mode');
+          }
+
+          // 檢查 iframe 是否已經載入
+          if ($iframe.length && $iframe[0].contentWindow) {
+              // 向 iframe 內部發送訊息
+              $iframe[0].contentWindow.postMessage({ type: 'dark-mode-change', isDarkMode }, '*');
+          }
+        });
+      });
+    </script>
