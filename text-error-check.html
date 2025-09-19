@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>字幕檔錯誤檢查</title>
+
+  <!-- 引入必要的CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" />
+
+  <link rel="stylesheet" href="./iframe-content.css" />
+</head>
+
+<body class="content-wrapper d-flex">
+  <div class="card card-primary flex-fill mx-1">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-exclamation-triangle pr-1"></i> 字幕檔錯誤檢查
+        </h3>
+    </div>
+    <div class="card-body flex-fill">
+      <div class="row h-100">
+        <div class="col-md-6">
+          <div class="form-group">
+            <div class="" id="left-title">輸入檢查文字</div>
+            <div class="form-control border-secondary ql-parent">
+              <div id="left-textarea"></div>
+            </div>
+            <div class="mt-1 ms-2 d-none d-md-block">
+              <kbd>F3</kbd> 搜尋下一個關鍵字<br />
+              <kbd>F4</kbd> 把選取的關鍵字取代成正確字詞<br />
+              <kbd>Shift</kbd> + <kbd>F3</kbd> 搜尋上一個關鍵字<br />
+              <kbd>Ctrl</kbd> + <kbd>S</kbd> 下載文字內容
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 mt-4 mt-md-0">
+          <div class="form-group">
+            <div class="" id="right-title">統一文字規則</div>
+            <div class="form-control border-secondary ql-parent">
+              <div id="right-textarea"></div>
+            </div>
+            <div class="mt-1 me-2 text-end d-none d-md-block">
+              <a class="" id="rule-link" target="_blank" href="#">
+                <i class="me-1 fa-solid fa-link"></i>打開線上文字規則
+              </a>
+              <br /><br /><br /><br />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 引入JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+  <script src="./class/highlightContent.js"></script>
+  <script src="./class/rulesNote.js"></script>
+  <script src="./url.js"></script>
+
+  <script>
+    const _rules = new RulesNote();
+
+    $(document).ready(function () {
+      const left_text = new HighlightContent('#left-textarea', '請拖曳文字檔到此，或在此輸入文字內容...', {
+        titleSelector: '#left-title',
+        enableCtrlS: true,
+        enableDragDrop: true,
+      });
+      const right_text = new HighlightContent('#right-textarea', '請在此輸入統一文字規則...', {
+        titleSelector: '#right-title',
+      });
+
+      // 統一字幕規則文件
+      const DOC_ID = '1G5AKdJIci7hjyZSvSjhnx0R5AxKnLqjT22KsydkVx8M';
+
+      // 更新href
+      $('#rule-link').attr('href', getGoogleDocUrl(DOC_ID));
+
+      // 下載讀取字幕統一規則
+      (async function loadAndShowRules() {
+        right_text.setText('載入規則文件中...');
+        const result = await exportGoogleDoc(DOC_ID);
+
+        // 顯示內容
+        right_text.setText(result.text);
+
+        // 設定rule
+        if (result.success) {
+          _rules.loadRule(result.text);
+        }
+      })();
+
+      right_text.on('leave', () => {
+        // 更新規則
+        const text = right_text.getText();
+        if (_rules.ruleContent != text) {
+          _rules.loadRule(text);
+          right_text.clearHighlight();
+          left_text.clearHighlight();
+        }
+      });
+
+      // 找上一個關鍵字
+      left_text.on('find-previous', (e) => {
+        const found = _rules.findPrevKeyOccurrence(e.detail.text, e.detail.cursor);
+        if (found.index === -1) {
+          alert('找不到上一個符合的關鍵字');
+          return;
+        }
+
+        // highlight
+        left_text.highlightText(found.key, found.index);
+        right_text.highlightText(found.key);
+
+        // 移動鼠標位置
+        left_text.setCursorPos(found.index);
+      });
+
+      // 找下一個關鍵字
+      left_text.on('find-next', (e) => {
+        const found = _rules.findNextKeyOccurrence(e.detail.text, e.detail.cursor);
+        if (found.index === -1) {
+          alert('已經到文件末尾，找不到下一個符合的關鍵字');
+          return;
+        }
+        left_text.highlightText(found.key, found.index);
+        right_text.highlightText(found.key);
+
+        // 移動鼠標位置
+        left_text.setCursorPos(found.index + found.key.length);
+      });
+
+      // 執行取代
+      left_text.on('correct-text', (e) => {
+        const found = e.detail.found;
+        const value = _rules.getCorrectText(found.key);
+        left_text.replaceText(found.index, found.key, value);
+      });
+    });
+
+    $(window).on('message', function (event) {
+      const eventData = event.originalEvent.data;
+      if (eventData.type === 'dark-mode-change') {
+        const isDarkMode = eventData.isDarkMode;
+        if (isDarkMode) {
+          $('body').addClass('dark-mode');
+        }
+        else {
+          $('body').removeClass('dark-mode');
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

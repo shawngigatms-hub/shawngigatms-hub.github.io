@@ -3,12 +3,39 @@ const PROXIES = [
 'https://r.jina.ai/https://'
 ];
 
+let _tokenClient = null;
+function loginAndGetGoogleDoc(url) {
+    if (!_tokenClient) {
+        _tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: '15959922737-e68nb64obt1ltsahstqlsd6ks7lgfh2i.apps.googleusercontent.com',
+            scope: 'https://www.googleapis.com/auth/drive.readonly',
+            callback: (tokenResponse) => {
+                _fetchTextWithAuth(url, tokenResponse.access_token);
+            }
+        });
+    }
+    _tokenClient.requestAccessToken(); // 會跳出 Google 登入/同意
+}
+
 function getGoogleDocUrl(doc_id) {
     return `https://docs.google.com/document/d/${doc_id}`;
 }
 
 async function _fetchText(url) {
     return fetch(url, { credentials: 'omit' }).then(function (resp) {
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.text();
+    });
+}
+
+async function _fetchTextWithAuth(url, accessToken) {
+    fetch(url, {
+        method: 'GET', // 或 POST
+        headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+        }
+    }).then(function (resp) {
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         return resp.text();
     });
@@ -56,7 +83,8 @@ async function exportGoogleDoc(doc_id) {
     for (let i = 0; i < targets.length; i++) {
         try {
             const isProxy = i > 0; // 第 0 個是直連，其餘為代理
-            let text = await _fetchText(targets[i]);
+            let text = await loginAndGetGoogleDoc(targets[i]);
+            //let text = await _fetchText(targets[i]);
 
             // 過濾內容
             text = (function filterText() {
