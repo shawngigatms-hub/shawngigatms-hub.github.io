@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>合併字幕檔</title>
+
+    <!-- 引入必要的CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/handsontable.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/ht-theme-main.min.css" />
+
+    <link rel="stylesheet" href="./iframe-content.css" />
+    <style> 
+        .w-button {
+            width: 148px !important;
+        } 
+        .ht-root-wrapper {
+            height: 100%;
+        }
+        .ht_clone_top th span {
+            max-width: unset !important;
+        }
+        .accordion-body {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        #srt-table {
+            height: 205px;
+        }
+    </style>
+</head>
+
+<body class="content-wrapper d-flex">
+    <div class="card card-primary flex-fill mx-1">
+        <div class="card-header">
+            <h3 class="card-title">
+                  <i class="fas fa-object-group pr-1"></i> 合併Srt字幕檔
+            </h3>
+        </div>
+        <div class="card-body" id="drop-area">
+            <div class="">
+                <input type="file" id="file-uploader" accept=".srt" multiple style="display: none;">
+                <div class="" id="srt-title"><a href="#">上傳檔案</a> 或 拖曳檔案到此</div>
+                <div class="d-flex my-3 mt-md-0">
+                    <div id="srt-table" class="flex-grow-1 overflow-auto"></div>
+                </div>
+            </div>
+            <div class="">
+                <div class="" id="accordion-title">預覽分段內容</div>
+                <div class="accordion" id="accordion-container">
+                    <template id="accordion-item-template">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading-1">
+                                <button class="accordion-button collapsed" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#collapse-1" aria-expanded="false" aria-controls="collapse-1">
+                                    <span class='col' data-field="file-name">${fileName}</span>
+                                    <span class='text-secondary' data-field="start-time">${data.startTime}</span>
+                                    <span class="mx-2">~</span>
+                                    <span class='text-secondary mr-3' data-field="end-time">${data.endTime}</span>
+                                </button>
+                            </h2>
+                            <div id="collapse-1" class="accordion-collapse collapse" aria-labelledby="heading-1">
+                                <div class="accordion-body"></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex px-0 justify-content-end mt-1">
+                <button id="btn-export" type="button" class="btn btn-primary w-button" role="button">合併 & 下載</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+
+    <script src="./url.js"></script>
+    <script>
+
+    $(document).ready(function() {
+        
+        // <fileName, {content, startTime, endTime, order}>
+        const fileMap = new Map();
+        
+        const $srtTable = $('#srt-table');
+        const srt_table = new Handsontable($srtTable[0], {
+            themeName: 'ht-theme-main',
+            colHeaders: ['檔案名稱', 'Start Time', 'End Time', '順序'],
+            colWidths: [280, 120, 120, 80],
+            columnSorting: true,
+            manualColumnResize: true,
+            rowHeaders: true,
+            autoWrapRow: true,
+            autoWrapCol: true,
+            contextMenu: true,
+            outsideClickDeselects: false,
+            readOnly: true,
+            height: '100%',
+            width: '100%',
+            licenseKey: 'non-commercial-and-evaluation',
+            afterInit: function() {
+                this.alter('insert_row_below');
+                this.alter('remove_col', 4, 1);
+            },
+        });
+
+        Handsontable.hooks.add('beforeRemoveRow', (index, amount) => {
+            for (let i = 0; i < amount; i++){
+                const rowData = srt_table.getDataAtRow(i + index);
+                const fileName = rowData[0];
+                if (fileName != null) {
+                    fileMap.delete(fileName);
+                }
+            }
+            accordionLoadFiles();
+        });
+
+        $('#srt-title a').on('click', function(e) {
+            e.preventDefault();
+            const fileUploader = $('#file-uploader');
+            fileUploader.trigger('click');
+        });
+
+        $('#file-uploader').on('change', function (e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                importFiles(files);
+            }
+            e.target.value = '';
+        });
+
+        // DOM event - drag-drop
+        const $dropArea = $('#drop-area');
+        $dropArea.on({
+            'dragover dragenter': (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                $dropArea.addClass('drag-hover');
+            },
+            'dragleave drop': (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                $dropArea.removeClass('drag-hover');
+            },
+            'drop': (e) => {
+                const files = e.originalEvent.dataTransfer.files;
+                importFiles(files);
+            }
+        });
+
+        function importFiles(files) {
+            let filesReadCount = 0;
+            const fileCount = files.length;
+            for (let i = 0; i < fileCount; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    filesReadCount++;
+                    const fileContent = event.target.result;
+                    if (fileMap.has(file.name)) {
+                        return;
+                    }
+
+                    // 第一個時間段的開始時間
+                    const firstMatch = fileContent.match(/(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})/);
+                    const startTime = firstMatch ? firstMatch[1] : null;
+
+                    // 最後一個時間段的結束時間
+                    const regex = /(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})/g;
+                    let lastMatch;
+                    while ((m = regex.exec(fileContent)) !== null) {
+                        lastMatch = m; // 一直更新，最後一次就是最後區間
+                    }
+                    const endTime = lastMatch ? lastMatch[2] : null;
+
+                    // 取出檔名包含的順序
+                    const number = extractNumber(file.name);
+
+                    // 塞入fileMap
+                    fileMap.set(file.name, {
+                        content: fileContent,
+                        startTime: startTime,
+                        endTime: endTime,
+                        order: number
+                    });
+
+                    // 更新UI - Table, Accrodinon
+                    if (filesReadCount === fileCount) {
+                        tableLoadFiles();
+                        accordionLoadFiles();
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+       
+        function tableLoadFiles() {
+            let rowIndex = 0;
+            let updatedRow = [];
+            fileMap.forEach((data, fileName) => {
+                // 最下方插入一列
+                if (rowIndex == srt_table.countRows()) {
+                    srt_table.alter('insert_row_below');
+                }
+
+                updatedRow.push(
+                    [rowIndex, 0, fileName],
+                    [rowIndex, 1, data.startTime],
+                    [rowIndex, 2, data.endTime],
+                    [rowIndex, 3, data.order],
+                );
+                rowIndex++;
+            });
+            srt_table.setDataAtCell(updatedRow);
+        }
+
+        function accordionLoadFiles() {
+            // clear items
+            removeAllAccordionItems();
+
+            // sort files
+            // sortedEntries 每一項都是 [fileName, data]
+            const sortedEntries = Array.from(fileMap.entries());
+            sortedEntries.sort((a, b) => {
+                const numA = a[1].order;
+                const numB = b[1].order;
+                if (numA === null || numB === null) return 0;
+                return numA - numB;
+            });
+
+            const $accordionContainer = $('#accordion-container');
+            const $accordionTemplate = $('#accordion-item-template');
+            let preEndTimeText = '';
+            let $preEndTime = null;
+
+            // insert items
+            sortedEntries.forEach(([fileName, data]) => {
+                // clone template node
+                const $newItem = $accordionTemplate.contents().clone(true);
+                const $itemHeading = $newItem.find('.accordion-header');
+                const $itemButton = $itemHeading.find('.accordion-button');
+                const $itemCollapse = $newItem.find('.accordion-collapse');
+                const $itemBody = $itemCollapse.find('.accordion-body');
+
+                const $itemName = $itemButton.find('[data-field="file-name"]');
+                const $itemSTime = $itemButton.find('[data-field="start-time"]');
+                const $itemETime = $itemButton.find('[data-field="end-time"]');
+
+                // 更新屬性以確保唯一性
+                const hashId = genHashId(fileName);
+                const headingId = `heading-${hashId}`;
+                const collapseId = `collapse-${hashId}`;
+                $itemHeading.attr('id', headingId);
+                $itemButton
+                    .attr('data-bs-target', `#${collapseId}`)
+                    .attr('aria-controls', collapseId);
+                $itemName.text(fileName);
+                $itemSTime.text(data.startTime);
+                $itemETime.text(data.endTime);
+                $itemCollapse
+                    .attr('id', collapseId)
+                    .attr('aria-labelledby', headingId);
+
+                // 檢查時間是否有覆蓋
+                if (preEndTimeText !== '' && preEndTimeText > data.startTime) {
+                    $preEndTime.addClass('text-danger');
+                    $itemSTime.addClass('text-danger');
+                }
+                preEndTimeText = data.endTime;
+                $preEndTime = $itemETime;
+
+                // 插入內容
+                $itemBody.html(data.content.replace(/\r?\n/g, '<br\>'));
+
+                // 將新建立的項目附加到容器中
+                $accordionContainer.append($newItem);
+            });
+        }
+
+        function removeAllAccordionItems() {
+            const $accordionContainer = $('#accordion-container');
+            const children = $accordionContainer[0].children;
+            for (let i = children.length - 1; i >= 0; i--) {
+                const child = children[i];
+                if (child.tagName !== 'TEMPLATE') {
+                    $accordionContainer[0].removeChild(child);
+                }
+            }
+        }
+
+        $('#btn-export').on('click', function (e) {
+            const sortedEntries = Array.from(fileMap.entries());
+            sortedEntries.sort((a, b) => {
+                const numA = a[1].order;
+                const numB = b[1].order;
+                if (numA === null || numB === null) return 0;
+                return numA - numB;
+            });
+
+            let mergedContent = '';
+            sortedEntries.forEach(([fileName, data]) => {
+                mergedContent += data.content;
+            });
+
+            // 自動下載檔案
+            const topic = extractTopic(sortedEntries[0][0]);
+            downloadText(mergedContent, `${topic}_checked.srt`);
+        });
+    });
+
+    function extractTopic(fileName) {
+        const match = fileName.match(/^([a-zA-Z0-9]+)[-_]/);
+        return match ? match[1] : null;
+    }
+
+    function extractNumber(fileName) {
+        const matches = [...fileName.matchAll(/[-_](\d+)(?=[-_])/g)];
+        return matches.length ? parseInt(matches[matches.length - 1][1]) : null;
+    }
+    
+    function genHashId(fileName) {
+        let hash = 0;
+        for (let i = 0; i < fileName.length; i++) {
+            hash = (hash << 5) - hash + fileName.charCodeAt(i);
+            hash |= 0;
+        }
+        return Math.abs(hash);
+    }
+
+    $(window).on('message', function (event) {
+        const eventData = event.originalEvent.data;
+        if (eventData.type === 'dark-mode-change') {
+            const isDarkMode = eventData.isDarkMode;
+            if (isDarkMode) {
+                $('body').addClass('dark-mode');
+            }
+            else {
+                $('body').removeClass('dark-mode');
+            }
+        }
+    });
+    </script>
+</body>
+
+</html>

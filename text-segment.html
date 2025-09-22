@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>字幕分段</title>
+
+    <!-- 引入必要的CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/handsontable.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/styles/ht-theme-main.min.css" />
+
+    <link rel="stylesheet" href="./iframe-content.css" />
+
+    <style>
+        .time { max-width: 138px; }
+        .w-button {
+            width: 148px !important;
+        } 
+        .ht-root-wrapper {
+            height: 100%;
+        }
+        #srt-table {
+            height: 200px;
+        }
+    </style>
+
+</head>
+
+<body class="content-wrapper d-flex">
+    <div class="card card-primary flex-fill mx-1">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-cut pr-1"></i> 字幕分段
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="row h-100">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <div class="" id="left-title">分段訊息</div>
+                        <div class="form-control border-secondary ql-parent">
+                            <div id="left-textarea"></div>
+                        </div>
+                        <div class="d-flex px-0 justify-content-end mt-1">
+                            <button id="btn-import-names" type="button" class="btn btn-info w-button" role="button">匯入分段</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex flex-column col-md-9 mt-3 mt-md-0">
+                    <div class="mb-3">
+                        <div class="" id="rt-title">計算任務時間</div>
+                        <div class="d-flex flex-wrap justify-content-lg-start justify-content-center p-2 border border-secondary rounded border-highlight">
+                            <div class="align-self-end fs-2 my-1 pe-2">(</div>
+                            <div class="time my-1">
+                                <label class="text-nowrap mb-0">影片總長度 (h:m:s:f)</label>
+                                <input id="time-total" type="text" class="form-control fs-5 border-danger" autocomplete="off" />
+                            </div>
+                            <div class="align-self-end fs-2 px-2 my-1">-</div>
+                            <div class="time my-1">
+                                <label class="text-nowrap mb-0">開始時間 (h:m:s.f)</label>
+                                <input id="time-start" type="text" class="form-control fs-5" autocomplete="off" />
+                            </div>
+                            <div class="align-self-end fs-2 px-2 mb-1">)</div>
+                            <div class="align-self-end fs-2 pe-2 mb-1 mb-md-0">÷</div>
+                            <div class="my-1" style="width:85px">
+                                <label class="text-nowrap mb-0">總人數</label>
+                                <input id="user-count" type="number" class="form-control fs-5" min="1" value="1" />
+                            </div>
+                            <div class="align-self-end fs-2 px-2 mb-1 mb-md-0">=</div>
+                            <div class="time my-1">
+                                <label class="text-nowrap mb-0">時間/人 (m:s.f)</label>
+                                <input id="time-avg" type="text" class="form-control fs-5" readonly />
+                            </div>
+                        </div>
+                        <div class="col-auto m-2 d-none time">
+                            <label class="text-nowrap mb-0">剩餘時間 (m:s.f)</label>
+                            <input id="time-remainder" type="text" class="form-control fs-5" readonly />
+                        </div>
+                    </div>
+
+                    <div id="srt-table" class="mb-3 flex-grow-1"></div>
+
+                    <div class="flex-shrink-1">
+                        <div class="">
+                            <span>分配單人任務</span>
+                            <span class="px-2"> - </span>
+                            <span class="text-success rounded">
+                                <i class="fa-solid fa-user pe-1"></i>
+                                <span id="user-name"></span>
+                            </span>
+                        </div>
+
+                        <div class="row mx-0 p-2 border border-secondary rounded border-highlight">
+                            <div class="col ps-0">
+                                <div class="d-flex flex-wrap pb-1">
+                                    <div class="col px-0 time my-1">
+                                        <label class="text-nowrap mb-0">開始時間 (h:m:s:f)</label>
+                                        <input id="user-time-start" type="text" class="form-control fs-5 border-danger" autocomplete="off" />
+                                    </div>
+                                    <div class="col-auto align-self-end fs-2 px-2 mb-1 mb-md-0">+</div>
+                                    <div class="col px-0 time my-1">
+                                        <label class="text-nowrap mb-0">時間長度 (m:s.f)</label>
+                                        <input id="user-time-avg" type="text" class="form-control fs-5" autocomplete="off" />
+                                    </div>
+                                    <div class="col-auto align-self-end fs-2 px-2 mb-1 mb-md-0">=</div>
+                                    <div class="col px-0 time my-1">
+                                        <label class="text-nowrap mb-0">結束時間 (h:m:s:f)</label>
+                                        <input id="user-time-end" type="text" class="form-control fs-5 border-danger" autocomplete="off" />
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-wrap">
+                                    <div class="col px-0 pt-1">
+                                        <label class="text-nowrap mb-0">開始字幕</label>
+                                        <div class="form-control ql-parent">
+                                            <div id="user-start-textarea"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-lg px-0 pl-lg-2 pt-1">
+                                        <label class="text-nowrap mb-0">結束字幕</label>
+                                        <div class="form-control ql-parent">
+                                            <div id="user-end-textarea"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-auto p-0 mt-2 mt-sm-0 d-flex align-items-stretch">
+                                <button id="btn-enter-task" type="button" class="btn btn-info w-button" role="button">輸入</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-end mx-2">
+                <button id="btn-export-result" type="button" class="btn btn-primary px-4" role="button">匯出分段訊息</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="modal-export" tabindex="-1" role="dialog" aria-labelledby="modal-export-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-export-title">分段訊息</h5>
+                    <button type="button" class="close w-auto" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="export-textarea"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary w-button" id="btn-save">Save</button>
+                    <button type="button" class="btn btn-primary w-button" id="btn-copy-text">Copy to clipboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.9/jquery.inputmask.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <script src="./class/highlightContent.js"></script>
+    <script src="./class/time.js"></script>
+    <script src="./class/srtTable.js"></script>
+    <script src="./url.js"></script>
+
+    <script>
+    
+    $(document).ready(function() {
+
+        (function initTimeMask() {
+            setupTimeMask("#time-total, #time-start, #user-time-start, #user-time-end", { withHour: true });
+            setupTimeMask("#time-avg, #time-remainder, #user-time-avg", { withHour: false });
+            $("#time-start").val("00:00:00.00");
+            $('#time-total, #time-start, #user-count').on('input', calculateUserTime);  // 計算分配任務時間
+            $('#user-time-start, #user-time-avg').on('input', calculateUserEndTime);    // 計算結束時間
+        })();
+        
+        const left_text = new HighlightContent('#left-textarea', '請在此輸入文字內容...', { titleSelector: '#left-title', enableDragDrop: true });
+        const export_msg_text = new HighlightContent('#export-textarea', '', { enableDragDrop: false });
+        const srt_table = new SrtTable('#srt-table');
+        let _caption = '';
+
+        // user vars
+        const $userName = $('#user-name');
+        const $userCount = $('#user-count');
+        const $userStartTime = $('#user-time-start');
+        const $userEndTime = $('#user-time-end');
+        const $userAvgTime = $('#user-time-avg');
+        const user_start_text = new HighlightContent('#user-start-textarea', '請在此輸入文字內容...', { enableDragDrop: true,});
+        const user_end_text = new HighlightContent('#user-end-textarea', '請在此輸入文字內容...', { enableDragDrop: true });
+
+
+        function getUserCount() {
+            return parseInt($userCount.val(), 10);
+        }
+
+        (function InitPartitionMessage() {
+            // 分段訊息文件ID
+            const DOC_ID = '1gcQQFXwzf0JotCcy33WD1nZ6e2oGvETgMqUnr1319LQ';
+
+            // 載入上一次儲存的分段訊息
+            left_text.setText('載入文字訊息中...');
+            (async function loadPartitionMessage() {
+                // 下載文件 & 顯示內容
+                const result = await exportGoogleDoc(DOC_ID);
+                left_text.setText(result.text);
+            })();
+            
+            // `Save`按鈕: 儲存分段訊息
+            $('#btn-save').on('click', function() {
+                (async function() {
+                    const txt = export_msg_text.getText();
+                    const result = await updateGoogleDoc(DOC_ID, txt);
+                    if(result.success) {
+                        $('#left-title').removeClass('has-star');
+                        $(document).Toasts('create', {
+                            title: 'Success',
+                            body: '資料已成功儲存。',
+                            class: 'bg-success',
+                            position: 'bottomRight',
+                            delay: 5000,
+                            icon: 'fas fa-check-circle'
+                        });
+                    }
+                    else {
+                        $(document).Toasts('create', {
+                            title: 'Error',
+                            body: '儲存失敗：' + result.error,
+                            class: 'bg-danger',
+                            position: 'bottomRight',
+                            delay: 5000,
+                            icon: 'fas fa-times-circle'
+                        });
+                    }
+                })();
+            });
+        })();
+
+        // `Table` 選取範圍變更
+        srt_table.on('selection-change', (e) => {
+            const { rowIndex, name, startTimeString, startText, endTimeString, endText } = e.detail;
+
+            // 更新username
+            $userName.text(name);
+
+            // 更新start time
+            if (startTimeString !== '') {
+                $userStartTime.val(startTimeString);
+            }
+            else {
+                // 拿上一列的結束時間當作開始時間
+                const prevRowData = srt_table.getRowData(rowIndex - 1);
+                $userStartTime.val(prevRowData ? prevRowData.endTimeString : $('#time-start').val());
+            }
+            
+            // 更新start text
+            if (startText !== '') {
+                user_start_text.setText(startText);
+            }
+            else {
+                user_start_text.setText((rowIndex === 0) ? '(start)' : '');
+            }
+
+            // 更新end time
+            if (endTimeString !== '') {
+                $userEndTime.val(endTimeString);
+            } 
+            else {
+                calculateUserEndTime();
+            }
+        
+            // 更新end text
+            if (endText !== '') {
+                user_end_text.setText(endText);
+            }
+            else {
+                const isLastRow = (rowIndex === getUserCount() - 1);
+                user_end_text.setText(isLastRow ? '(end)' : '');
+            }
+        });
+
+        function calculateUserEndTime() {
+            let newEndTimeString = '';
+
+            const rowIndex = srt_table.getSelectedRowIndex();
+            if (rowIndex === getUserCount() - 1) {
+                newEndTimeString = $("#time-total").val();
+            }
+            else {
+                const startTime = Time.tryParse($userStartTime.val());
+                if (!startTime) return;
+
+                const avgTime = Time.tryParse($userAvgTime.val());
+                if (!avgTime) return;
+
+                const newEndTime = startTime.add(avgTime);
+                newEndTimeString = newEndTime.toString({showHours: true});
+            }
+            $userEndTime.val(newEndTimeString);
+        }
+
+        function calculateUserTime() {
+            const totalTime = Time.tryParse($("#time-total").val());
+            if (!totalTime) return;
+
+            const startTime = Time.tryParse($("#time-start").val());
+            if (!startTime) return;
+
+            const taskTime = totalTime.minus(startTime);
+            if (!taskTime) return;
+
+            const workTime = taskTime.divide(getUserCount());
+            if (!workTime) return;
+
+            const workTimeString = workTime.toString({showHours: false});
+            $("#time-avg").val(workTimeString);
+            $userAvgTime.val(workTimeString);
+            $userStartTime.val(startTime.toString({showHours: true}));
+
+            const endTime = startTime.add(workTime);
+            $userEndTime.val(endTime.toString({showHours: true}));
+        }
+
+        // `匯入分段` 按鈕
+        $('#btn-import-names').on('click', function (e) {
+            const text = left_text.getText();
+            const lines = text.split(/\r?\n/);
+
+            // 1.取出姓名與課堂名稱
+            let nameList = [];
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                if (!line) continue;
+                line = line.trim();
+                if (!line) continue;
+
+                // \(\.\) → 匹配(.)
+                // \s* → 任意數量的空白（包含 0 個）
+                // \d+ → 一個或多個數字
+                // \. → 字面上的句號
+                // ([^\s(]+) → 捕獲組：匹配一個或多個非空白字符且非左括號的字符
+                const match = line.match(/\(\.\)\s*\d+\.([^\s(]+)/);
+                if (match) {
+                    nameList.push(match[1]);
+                }
+                else if (line.indexOf('(heart)') >= 0) {
+                    const tmp = line.split('_');
+                    if (tmp.length === 2) {
+                        let number = parseInt(tmp[1]);
+                        _caption = `${tmp[0]}_${number + 1}`;
+                    }
+                }
+            }
+            if (nameList.length === 0) return;
+
+            // 2.nameList第一個元素移到最後面
+            // splice(從哪個索引開始, 移除幾個元素)
+            const firstItem = nameList.splice(0, 1)[0];
+            nameList.push(firstItem);
+            
+            // 3.顯示到畫面上
+            srt_table.loadUsers(nameList);
+
+            // 4. 更新人數 & 重新計算時間
+            $userCount.val(nameList.length);
+            calculateUserTime();
+
+            // 5. 選擇第一列
+            srt_table.selectRow(0);
+        });
+
+        // `輸入` 按鈕
+        $('#btn-enter-task').on('click', function (e) {
+            const rowIndex = srt_table.getSelectedRowIndex();
+
+            // 設定table row data
+            srt_table.setRowData({
+                rowIndex: (rowIndex < 0) ? 0 : rowIndex,
+                name: $userName.text(),
+                startTimeString: $userStartTime.val(),
+                startText: user_start_text.getText().trim(),
+                endTimeString: $userEndTime.val(),
+                endText: user_end_text.getText().trim()
+            });
+
+            // 選取下一列
+            const nextRowIndex = rowIndex + 1;
+            if (nextRowIndex < getUserCount()) {
+                srt_table.selectRow(nextRowIndex);
+            }
+        });
+
+        // `匯出分段訊息` 按鈕
+        $('#btn-export-result').on('click', function() {
+            const now = new Date();
+            let msg = '';
+            msg += (_caption == "" ? "(heart)###_#" : _caption) + '\n';
+            msg += '課程日期：' + now.getFullYear() + '.##.##\n';
+            msg += '總長：' + $("#time-total").val() + '\n\n';
+
+            const rowCnt = srt_table.getRowCount();
+            for (let index = 0; index < rowCnt; index++) {
+                const { rowIndex, name, startTimeString, startText, endTimeString, endText } = srt_table.getRowData(index);
+                const startTime = Time.tryParse(startTimeString);
+                const endTime = Time.tryParse(endTimeString);
+                if (endTime === null || startTime === null)
+                    break;
+                
+                const durationTime = endTime.minus(startTime);
+                msg += `(.)${index + 1}.${name} (約${durationTime.minutes}分鐘)\n`;
+                msg += `${startTimeString}\n`;
+                msg += (startText === '') ? '' : `${startText}\n`;
+                msg += '~\n';
+                msg += `${endTimeString}\n`;
+                msg += (endText === '') ? '\n' : `${endText}\n\n`;
+            }
+            msg += '\n';
+
+            // show export modal
+            export_msg_text.setText(msg);
+            $('#modal-export').modal('show');
+        });
+
+        $('#btn-copy-text').on('click', function() {
+            const txt = export_msg_text.getText();
+            navigator.clipboard.writeText(txt).then(() => {
+                $('#modal-export').modal('hide');
+            })
+        });
+
+        // 設定時間遮罩
+        function setupTimeMask(selector, {withHour = true}) {
+            $(selector).inputmask({
+                mask: withHour ? "99:99:99.99" : "99:99.99",
+                placeholder: "_",
+                insertMode: true,  
+                onBeforePaste: function (pastedValue) {
+                    if (!pastedValue) return pastedValue;
+                    let parts = pastedValue.split(":");
+                    if (parts[0] && parts[0].length === 1) {
+                        parts[0] = "0" + parts[0];
+                    }
+                    return parts.join(":");
+                }
+            });
+        }
+    });
+
+    $(window).on('message', function (event) {
+        const eventData = event.originalEvent.data;
+        if (eventData.type === 'dark-mode-change') {
+            const isDarkMode = eventData.isDarkMode;
+            if (isDarkMode) {
+                $('body').addClass('dark-mode');
+            }
+            else {
+                $('body').removeClass('dark-mode');
+            }
+        }
+    });
+    </script>
+</body>
+
+</html>

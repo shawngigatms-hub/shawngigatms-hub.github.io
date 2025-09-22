@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>時間計算</title>
+
+    <!-- 引入必要的CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <link rel="stylesheet" href="./iframe-content.css" />
+
+    <style>
+        .time { max-width: 138px; }
+    </style>
+
+</head>
+
+<body class="content-wrapper d-flex">
+    <div class="card card-primary flex-fill mx-1">
+        <div class="card-header">
+            <h3 class="card-title">
+                  <i class="fas fa-clock pr-1"></i> 時間計算
+            </h3>
+        </div>
+        <div class="card-body flex-fill">
+            <div class="" id="rt-title">加法</div>
+            <div class="row mb-3">
+                <div class="d-flex flex-wrap py-2 px-3 border rounded border-highlight">
+                    <div class="time my-1">
+                        <label class="text-nowrap mb-0">時間 1 (h:m:s)</label>
+                        <input id="time-add-1" type="text" class="form-control fs-5" autocomplete="off" />
+                    </div>
+                    <div class="align-self-end fs-2 px-2 my-1" style="width: 1em;">+</div>
+                    <div class="time my-1">
+                        <label class="text-nowrap mb-0">時間 2 (h:m:s)</label>
+                        <input id="time-add-2" type="text" class="form-control fs-5" autocomplete="off" />
+                    </div>
+                    <div class="align-self-end fs-2 px-2 mb-1 mb-md-0">=</div>
+                    <div class="time my-1">
+                        <label class="text-nowrap mb-0">結果 (h:m:s)</label>
+                        <input id="time-add-result" type="text" class="form-control fs-5" readonly autocomplete="off" />
+                    </div>
+                </div>
+            </div>
+            <div class="" id="rt-title">減法</div>
+            <div class="row mb-3">
+                <div class="d-flex flex-wrap py-2 px-3 border rounded border-highlight">
+                    <div class="time my-1">
+                        <label class="text-nowrap mb-0">時間 1 (h:m:s)</label>
+                        <input id="time-minus-1" type="text" class="form-control fs-5" autocomplete="off" />
+                    </div>
+                    <div class="align-self-end fs-2 px-2 my-1" style="width: 1em;">-</div>
+                    <div class="time my-1">
+                        <label class="text-nowrap mb-0">時間 2 (h:m:s)</label>
+                        <input id="time-minus-2" type="text" class="form-control fs-5" autocomplete="off" />
+                    </div>
+                    <div class="align-self-end fs-2 px-2 mb-1 mb-md-0">=</div>
+                    <div class="time my-1">
+                        <label class="text-nowrap mb-0">結果 (h:m:s)</label>
+                        <input id="time-minus-result" type="text" class="form-control fs-5" readonly autocomplete="off" />
+                    </div>
+                </div>
+            </div>
+            <div class="" id="rt-title">除法</div>
+            <div class="row mb-3">
+                <div class="d-flex flex-wrap py-2 px-3 border rounded border-highlight">
+                    <div class="time my-1">
+                        <label class="text-nowrap mb-0">時間 (h:m:s)</label>
+                        <input id="time-divide-1" type="text" class="form-control fs-5" autocomplete="off" />
+                    </div>
+                    <div class="align-self-end fs-2 px-2 my-1" style="width: 1em;">÷</div>
+                    <div class="my-1" style="width:85px">
+                        <label class="text-nowrap mb-0">數量</label>
+                        <input id="time-divide-number" type="number" class="form-control fs-5" min="1" value="1" />
+                    </div>
+                    <div class="align-self-end fs-2 px-2 mb-1 mb-md-0">=</div>
+                    <div class="time my-1">
+                        <label class="text-nowrap mb-0">結果 (h:m:s)</label>
+                        <input id="time-divide-result" type="text" class="form-control fs-5" readonly autocomplete="off" />
+                    </div>
+                    <div class="d-flex flex-nowrap">
+                        <div class="align-self-end fs-2 my-1 px-2">(</div>
+                        <div class="time my-1">
+                            <label class="text-nowrap mb-0">剩餘 (h:m:s)</label>
+                            <input id="time-divide-remainder" type="text" class="form-control fs-5" readonly autocomplete="off" />
+                        </div>
+                        <div class="align-self-end fs-2 px-2 mb-1">)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.9/jquery.inputmask.min.js"></script>
+    <script src="./class/time.js"></script>
+
+    <script>
+    
+    (function initTimeMask() {
+        setupTimeMask("#time-add-1, #time-add-2, #time-add-result", { withHour: true });
+        setupTimeMask("#time-minus-1, #time-minus-2, #time-minus-result", { withHour: true });
+        setupTimeMask("#time-divide-1, #time-divide-result, #time-divide-remainder", { withHour: true });
+
+        $('#time-add-1, #time-add-2').on('input', addTime);
+        $('#time-minus-1, #time-minus-2').on('input', minusTime);
+        $('#time-divide-1, #time-divide-number').on('input', divideTime);
+    })();
+
+    function addTime() {
+        const time1 = Time.tryParse($("#time-add-1").val());
+        const time2 = Time.tryParse($("#time-add-2").val());
+        const resultTime = time1.add(time2);
+        $("#time-add-result").val(resultTime.toString({ showHours: true }));
+    }
+
+    function minusTime() {
+        const time1 = Time.tryParse($("#time-minus-1").val());
+        const time2 = Time.tryParse($("#time-minus-2").val());
+        const resultTime = time1.minus(time2);
+        $("#time-minus-result").val(resultTime.toString({ showHours: true }));
+    }
+
+    function divideTime() {
+        const time1 = Time.tryParse($("#time-divide-1").val());
+        const number = parseInt($('#time-divide-number').val(), 10);
+        const resultTime = time1.divide(number);
+        $("#time-divide-result").val(resultTime.toString({ showHours: true }));
+
+        // 清除ms 計算剩餘時間
+        resultTime.milliseconds = 0;
+        const totalMs = resultTime.getTotalMilliseconds() * number;
+        const totalTime = Time.tryParseFromMilliseconds(totalMs)
+        const remainderTime = time1.minus(totalTime);
+        $('#time-divide-remainder').val(remainderTime.toString({ showHours: true }));
+    }
+
+    // 設定時間遮罩
+    function setupTimeMask(selector, {withHour = true}) {
+        $(selector).inputmask({
+            mask: withHour ? "99:99:99" : "99:99",
+            placeholder: "_",
+            insertMode: true,  
+            onBeforePaste: function (pastedValue) {
+                if (!pastedValue) return pastedValue;
+                let parts = pastedValue.split(":");
+                if (parts[0] && parts[0].length === 1) {
+                    parts[0] = "0" + parts[0];
+                }
+                return parts.join(":");
+            }
+        });
+        $(selector).val(withHour ? "00:00:00" : "00:00");
+    }
+
+    $(window).on('message', function (event) {
+        const eventData = event.originalEvent.data;
+        if (eventData.type === 'dark-mode-change') {
+            const isDarkMode = eventData.isDarkMode;
+            if (isDarkMode) {
+                $('body').addClass('dark-mode');
+            }
+            else {
+                $('body').removeClass('dark-mode');
+            }
+        }
+    });
+    </script>
+</body>
+
+</html>
