@@ -9,12 +9,21 @@ function loginAndGetGoogleDoc(url) {
         _tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: '15959922737-e68nb64obt1ltsahstqlsd6ks7lgfh2i.apps.googleusercontent.com',
             scope: 'https://www.googleapis.com/auth/drive.readonly',
-            callback: (tokenResponse) => {
-                _fetchTextWithAuth(url, tokenResponse.access_token);
-            }
         });
     }
-    _tokenClient.requestAccessToken(); // 會跳出 Google 登入/同意
+
+    return new Promise((resolve, reject) => {
+        _tokenClient.callback = (tokenResponse) => {
+            // 如果成功取得 access_token，則繼續 fetch
+            _fetchTextWithAuth(url, tokenResponse.access_token)
+                .then(text => resolve(text))
+                .catch(err => reject(err));
+        };
+        _tokenClient.error_callback = (err) => {
+            reject(new Error('Authentication failed: ' + err.error));
+        };
+        _tokenClient.requestAccessToken(); // 會跳出 Google 登入/同意
+    });
 }
 
 function getGoogleDocUrl(doc_id) {
@@ -29,22 +38,24 @@ async function _fetchText(url) {
 }
 
 async function _fetchTextWithAuth(url, accessToken) {
-    fetch(url, {
+    const response = await fetch(url, {
         method: 'GET', // 或 POST
         headers: {
             'Authorization': 'Bearer ' + accessToken,
             'Content-Type': 'application/json'
         }
-    }).then(function (resp) {
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        return resp.text();
     });
+    
+    if (!response.ok) {
+        throw new Error('HTTP ' + response.status);
+    }
+    return response.text();
 }
 
 async function updateGoogleDoc(doc_id, text) {
     const GAS_URL = `my_gas_url`;
 
-    return fetch(GAS_URL, {
+    return await fetch(GAS_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
